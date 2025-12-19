@@ -17,6 +17,7 @@ NB_CLUSTER_GROUP = "cluster_groups"
 NB_CLUSTER_TYPE = "cluster_types"
 NB_VM_INTERFACES = "interfaces"
 NB_VIRTUAL_DISKS = "virtual_disks"
+NB_INTERFACES = "interfaces"
 
 
 class NetboxVirtualizationModule(NetboxModule):
@@ -32,7 +33,9 @@ class NetboxVirtualizationModule(NetboxModule):
           - cluster_groups
           - cluster_types
           - interfaces
+          - virtual_disks
           - virtual_machines
+          - virtualization_interfaces
           - netbox_cluster
         """
         # Used to dynamically set key when returning results

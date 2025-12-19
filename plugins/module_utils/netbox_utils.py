@@ -13,6 +13,7 @@ import traceback
 import re
 import json
 from itertools import chain
+import logging
 
 from ansible.module_utils.common.text.converters import to_native, to_text
 from ansible.module_utils.common.collections import is_iterable
@@ -33,16 +34,24 @@ except ImportError:
 API_APPS_ENDPOINTS = dict(
     circuits={
         "circuits": {},
+        "circuit_groups": {},
+        "circuit_group_assignments": {},
         "circuit_types": {},
         "circuit_terminations": {},
         "providers": {},
+        "provider_accounts": {},
         "provider_networks": {},
+        "virtual_circuits": {},
+        "virtual_circuit_types": {},
+        "virtual_circuit_terminations": {},
     },
     core={
         "data_sources": {},
     },
     dcim={
+        "cable_terminations": {},
         "cables": {},
+        "connected_device": {},
         "console_ports": {},
         "console_port_templates": {},
         "console_server_ports": {},
@@ -59,9 +68,11 @@ API_APPS_ENDPOINTS = dict(
         "inventory_items": {},
         "inventory_item_roles": {},
         "locations": {},
+        "mac_addresses": {},
         "manufacturers": {},
         "modules": {},
         "module_bays": {},
+        "module_bay_templates": {},
         "module_types": {},
         "platforms": {},
         "power_feeds": {},
@@ -71,34 +82,45 @@ API_APPS_ENDPOINTS = dict(
         "power_ports": {},
         "power_port_templates": {},
         "racks": {},
-        "rack_groups": {},
+        "rack_groups": {}, # deprecated / removed
         "rack_roles": {},
         "rear_ports": {},
-        "rear-ports": {},
         "rear_port_templates": {},
         "regions": {},
         "sites": {},
         "site_groups": {},
         "virtual_chassis": {},
-        "mac_addresses": {},
+        "virtual-device-contexts": {},
     },
     extras={
+        "config_context_profiles": {},
         "config_contexts": {},
         "config_templates": {},
-        "tags": {},
-        "custom_fields": {},
         "custom_field_choice_sets": {},
+        "custom_fields": {},
         "custom_links": {},
+        "event_rules": {},
         "export_templates": {},
+        "image_attachments": {},
         "journal_entries": {},
+        "notification_groups": {},
+        "notifications": {},
+        "saved_filters": {},
+        "scripts": {},
+        "subscriptions": {},
+        "table_configs": {},
+        "tagged_objects": {},
+        "tags": {},
         "webhooks": {},
     },
     ipam={
         "aggregates": {},
+        "asn_ranges": {},
         "asns": {},
-        "fhrp_groups": {},
         "fhrp_group_assignments": {},
+        "fhrp_groups": {},
         "ip_addresses": {},
+        "ip_ranges": {},
         "l2vpns": {"deprecated": "3.7"},
         "l2vpn_terminations": {"deprecated": "3.7"},
         "prefixes": {},
@@ -106,10 +128,12 @@ API_APPS_ENDPOINTS = dict(
         "roles": {},
         "route_targets": {},
         "service_templates": {},
-        "vlans": {},
-        "vlan_groups": {},
-        "vrfs": {},
         "services": {},
+        "vlan_groups": {},
+        "vlan_translation_policies": {},
+        "vlan_translation_rules": {},
+        "vlans": {},
+        "vrfs": {},
     },
     secrets={},
     tenancy={
@@ -121,6 +145,7 @@ API_APPS_ENDPOINTS = dict(
         "contact_roles": {},
     },
     users={
+        "config": {},
         "groups": {},
         "permissions": {},
         "tokens": {},
@@ -130,8 +155,9 @@ API_APPS_ENDPOINTS = dict(
         "cluster_groups": {},
         "cluster_types": {},
         "clusters": {},
-        "virtual_machines": {},
+        "virtualization_interfaces": {},
         "virtual_disks": {},
+        "virtual_machines": {},
     },
     wireless={
         "wireless_lans": {},
@@ -139,16 +165,22 @@ API_APPS_ENDPOINTS = dict(
         "wireless_links": {},
     },
     vpn={
-        "l2vpns": {"introduced": "3.7"},
-        "l2vpn_terminations": {"introduced": "3.7"},
-        "tunnels": {"introduced": "3.7"},
-        "tunnel_groups": {"introduced": "3.7"},
+        "ike_policies": {},
+        "ike_proposals": {},
+        "ipsec_policies": {},
         "ipsec_profiles": {"introduced": "3.7"},
+        "ipsec_proposals": {},
+        "l2vpn_terminations": {"introduced": "3.7"},
+        "l2vpns": {"introduced": "3.7"},
+        "tunnel_groups": {"introduced": "3.7"},
+        "tunnel_terminations": {},
+        "tunnels": {"introduced": "3.7"},
     },
 )
 
 # Used to normalize data for the respective query types used to find endpoints
 QUERY_TYPES = dict(
+    asn_range="name",
     asn="asn",
     circuit="cid",
     circuit_termination="circuit",
@@ -224,6 +256,7 @@ QUERY_TYPES = dict(
     virtual_chassis="name",
     virtual_machine="name",
     virtual_machine_role="slug",
+    virtualization_interface="name",
     vlan="name",
     vlan_group="slug",
     vlan_role="name",
@@ -236,6 +269,8 @@ QUERY_TYPES = dict(
 
 # Specifies keys within data that need to be converted to ID and the endpoint to be used when queried
 CONVERT_TO_ID = {
+    "asn_range": "asn_ranges",
+    "asn_ranges": "asn_ranges",
     "assigned_object": "assigned_object",
     "bridge": "interfaces",
     "circuit": "circuits",
@@ -310,6 +345,7 @@ CONVERT_TO_ID = {
     "primary_ip4": "ip_addresses",
     "primary_ip6": "ip_addresses",
     "oob_ip": "ip_addresses",
+    "policy": "vlan_translation_policies",
     "provider": "providers",
     "provider_network": "provider_networks",
     "rack": "racks",
@@ -356,6 +392,7 @@ CONVERT_TO_ID = {
 
 ENDPOINT_NAME_MAPPING = {
     "aggregates": "aggregate",
+    "asn_ranges": "asn_range",
     "asns": "asn",
     "cables": "cable",
     "circuit_terminations": "circuit_termination",
@@ -395,6 +432,7 @@ ENDPOINT_NAME_MAPPING = {
     "inventory_items": "inventory_item",
     "inventory_item_roles": "inventory_item_role",
     "ip_addresses": "ip_address",
+    "ip_ranges": "ip_range",
     "l2vpns": "l2vpn",
     "l2vpn_terminations": "l2vpn_termination",
     "locations": "location",
@@ -437,8 +475,11 @@ ENDPOINT_NAME_MAPPING = {
     "virtual_chassis": "virtual_chassis",
     "virtual_machines": "virtual_machine",
     "virtual_disks": "virtual_disk",
+    "virtualization_interfaces": "virtualization_interface",
     "vlans": "vlan",
     "vlan_groups": "vlan_group",
+    "vlan_translation_policies": "vlan_translation_policy",
+    "vlan_translation_rules": "vlan_translation_rule",
     "vrfs": "vrf",
     "webhooks": "webhook",
     "wireless_lans": "wireless_lan",
@@ -449,6 +490,7 @@ ENDPOINT_NAME_MAPPING = {
 
 ALLOWED_QUERY_PARAMS = {
     "aggregate": set(["prefix", "rir"]),
+    "asn_range": set(["name", "slug"]),
     "asn": set(["asn"]),
     "assigned_object": set(["name", "device", "virtual_machine"]),
     "bridge": set(["name", "device"]),
@@ -523,6 +565,7 @@ ALLOWED_QUERY_PARAMS = {
     "ipaddresses": set(
         ["address", "vrf", "device", "interface", "assigned_object", "virtual_machine"]
     ),
+    "ip_range": set(["start_address", "end_address"]),
     "l2vpn": set(["name"]),
     "l2vpn_termination": set(
         ["l2vpn", "assigned_object_type", "interface_id", "vlan_id", "vminterface_id"]
@@ -552,10 +595,11 @@ ALLOWED_QUERY_PARAMS = {
     "power_panel": set(["name", "site"]),
     "power_port": set(["name", "device"]),
     "power_port_template": set(["name", "device_type"]),
-    "prefix": set(["prefix", "vrf"]),
-    "primary_ip4": set(["address", "vrf"]),
-    "primary_ip6": set(["address", "vrf"]),
-    "oob_ip": set(["address", "vrf"]),
+    "prefix": set(["prefix", "scope", "vrf"]),
+    "primary_ip4": set(["address", "vrf", "device", "interface", "assigned_object", "virtual_machine"]),
+    "primary_ip6": set(["address", "vrf", "device", "interface", "assigned_object", "virtual_machine"]),
+    "oob_ip": set(["address", "vrf", "device", "interface", "assigned_object", "virtual_machine"]),
+    "policy": set(["name", "id"]),
     "provider": set(["slug"]),
     "provider_network": set(["name"]),
     "rack": set(["name", "site", "location"]),
@@ -595,10 +639,13 @@ ALLOWED_QUERY_PARAMS = {
     "untagged_vlan": set(["group", "name", "site", "vid", "vlan_group", "tenant"]),
     "virtual_chassis": set(["name", "master"]),
     "virtual_machine": set(["name", "cluster"]),
+    "virtualization_interface": set(["name", "virtual_machine"]),
     "virtual_disk": set(["name", "virtual_machine"]),
     "vm_bridge": set(["name"]),
     "vlan": set(["group", "name", "site", "tenant", "vid", "vlan_group"]),
     "vlan_group": set(["name", "slug", "site", "scope"]),
+    "vlan_translation_policy": set(["name"]),
+    "vlan_translation_rule": set(["policy_id", "local_vid", "remote_vid"]),
     "vrf": set(["name", "tenant"]),
     "webhook": set(["name"]),
     "wireless_lan": set(["ssid"]),
@@ -640,6 +687,7 @@ REQUIRED_ID_FIND = {
     "interfaces": set(["form_factor", "mode", "type"]),
     "interface_templates": set(["type"]),
     "ip_addresses": set(["status", "role"]),
+    "ip_ranges": set(["status"]),
     "prefixes": set(["status"]),
     "power_feeds": set(["status", "type", "supply", "phase"]),
     "power_outlets": set(["type", "feed_leg"]),
@@ -651,6 +699,7 @@ REQUIRED_ID_FIND = {
     "rear_port_templates": set(["type"]),
     "services": set(["protocol"]),
     "sites": set(["status"]),
+    "virtualization_interfaces": set(["mode"]),
     "virtual_machines": set(["status", "face"]),
     "vlans": set(["status"]),
 }
@@ -668,6 +717,7 @@ CONVERT_KEYS = {
     "device_role": "role",
     "fhrp_group": "group",
     "inventory_item_role": "role",
+    "ip_ranges_role": "role",
     "parent_contact_group": "parent",
     "parent_location": "parent",
     "parent_interface": "parent",
@@ -689,6 +739,7 @@ CONVERT_KEYS = {
     "termination_b": "termination_b_id",
     "tunnel_group": "group",
     "virtual_machine_role": "role",
+    "virtualization_interfaces": "interfaces",
     "vlan_role": "role",
     "vlan_group": "group",
     "vm_bridge": "bridge",
@@ -697,6 +748,7 @@ CONVERT_KEYS = {
 
 # This is used to dynamically convert name to slug on endpoints requiring a slug
 SLUG_REQUIRED = {
+    "asn_ranges",
     "circuit_types",
     "cluster_groups",
     "cluster_types",
@@ -735,6 +787,7 @@ SCOPE_TO_ENDPOINT = {
     "dcim.sitegroup": "site_groups",
     "virtualization.cluster": "clusters",
     "virtualization.clustergroup": "cluster_groups",
+    "virtualization.interfaces": "virtualization_interfaces",
 }
 
 # Many-to-many list fields that NetBox returns in a non-deterministic order.
@@ -1143,6 +1196,9 @@ class NetboxModule(object):
             query_params = set(user_query_params)
         else:
             query_params = ALLOWED_QUERY_PARAMS.get(parent)
+
+        logging.basicConfig(filename='/tmp/netbox_debug.log', level=logging.DEBUG)
+        logging.debug("parent=%s, user_query_params=%s, query_params=%s", parent, user_query_params, query_params)
 
         if child:
             matches = query_params.intersection(set(child.keys()))

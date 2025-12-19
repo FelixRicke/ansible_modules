@@ -16,6 +16,12 @@ NB_PROVIDER_NETWORKS = "provider_networks"
 NB_CIRCUIT_TYPES = "circuit_types"
 NB_CIRCUIT_TERMINATIONS = "circuit_terminations"
 NB_CIRCUITS = "circuits"
+NB_CIRCUIT_GROUP_ASSIGNMENTS = "circuit_group_assignments"
+NB_CIRCUIT_GROUPS = "circuit_groups"
+NB_PROVIDER_ACCOUNTS = "provider_accounts"
+NB_VIRTUAL_CIRCUIT_TERMINATIONS = "virtual_circuit_terminations"
+NB_VIRTUAL_CIRCUIT_TYPES = "virtual_circuit_types"
+NB_VIRTUAL_CIRCUITS = "virtual_circuits"
 
 
 class NetboxCircuitsModule(NetboxModule):
@@ -30,8 +36,14 @@ class NetboxCircuitsModule(NetboxModule):
         - circuit_types
         - circuit_terminations
         - circuits
+        - circuit_group_assignments
+        - circuit_groups
         - providers
         - provider_networks
+        - provider_accounts
+        - virtual_circuit_terminations
+        - virtual_circuit_types
+        - virtual_circuits
         """
         # Used to dynamically set key when returning results
         endpoint_name = ENDPOINT_NAME_MAPPING[self.endpoint]

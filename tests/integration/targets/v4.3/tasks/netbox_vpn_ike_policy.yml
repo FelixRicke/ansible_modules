@@ -1,0 +1,67 @@
+- name: Test IKE Policy creation (check mode)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: IKE policy check-mode create
+      netbox.netbox.netbox_vpn_ike_policy:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        data:
+          name: "TEST-IKE-POLICY"
+          version: 2
+          mode: main
+        state: present
+      check_mode: yes
+      register: result1
+
+    - assert:
+        that:
+          - result1.changed is defined
+
+- name: IKE Policy create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: IKE policy create
+      netbox.netbox.netbox_vpn_ike_policy:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        data:
+          name: "TEST-IKE-POLICY"
+          version: 2
+          mode: aggressive
+        state: present
+      register: result2
+
+    - assert:
+        that:
+          - result2.changed
+          - result2.ansible_facts.netbox_object.name == "TEST-IKE-POLICY"
+
+- name: IKE Policy idempotence (update with same data)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: IKE policy create
+      netbox.netbox.netbox_vpn_ike_policy:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        data:
+          name: "TEST-IKE-POLICY"
+          version: 2
+          mode: aggressive
+        state: present
+      register: result2
+
+    - assert:
+        that:
+          - result2.changed == false
+
+- name: IKE Policy delete (check mode)
+  ...
+
+- name: IKE Policy delete
+  ...

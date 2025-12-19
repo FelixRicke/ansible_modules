@@ -15,6 +15,7 @@ NB_GROUPS = "groups"
 NB_PERMISSIONS = "permissions"
 NB_TOKENS = "tokens"
 NB_USERS = "users"
+NB_CONFIG = "config"
 
 
 class NetboxUsersModule(NetboxModule):
@@ -26,6 +27,7 @@ class NetboxUsersModule(NetboxModule):
         This function should have all necessary code for endpoints within the
         application to create/update/delete the endpoint objects
         Supported endpoints:
+        - config
         - groups
         - permissions
         - tokens

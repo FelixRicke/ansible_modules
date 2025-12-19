@@ -18,6 +18,12 @@ NB_L2VPNS = "l2vpns"
 NB_L2VPN_TERMINATIONS = "l2vpn_terminations"
 NB_TUNNELS = "tunnels"
 NB_TUNNEL_GROUPS = "tunnel_groups"
+NB_TUNNEL_TERMINATIONS = "tunnel_terminations"
+NB_IKE_POLICIES = "ike_policies"
+NB_IKE_PROPOSALS = "ike_proposals"
+NB_IPSEC_POLICIES = "ipsec_policies"
+NB_IPSEC_PROFILES = "ipsec_profiles"
+NB_IPSEC_PROPOSALS = "ipsec_proposals"
 
 
 class NetboxVpnModule(NetboxModule):

@@ -31,7 +31,10 @@ NB_SERVICES = "services"
 NB_SERVICE_TEMPLATES = "service_templates"
 NB_L2VPNS = "l2vpns"
 NB_L2VPN_TERMINATIONS = "l2vpn_terminations"
-
+NB_ASN_RANGES = "asn_ranges"
+NB_IP_RANGES = "ip_ranges"
+NB_VLAN_TRANSLATION_POLICIES = "vlan_translation_policies"
+NB_VLAN_TRANSLATION_RULES = "vlan_translation_rules"
 
 class NetboxIpamModule(NetboxModule):
     def __init__(self, module, endpoint):
@@ -150,11 +153,13 @@ class NetboxIpamModule(NetboxModule):
         to create/update/delete the endpoint objects
         Supported endpoints:
         - aggregates
+        - asn_ranges
         - asns
         - fhrp_groups
         - fhrp_group_assignments
         - ipam_roles
         - ip_addresses
+        - ip_ranges
         - l2vpns
         - l2vpn_terminations
         - prefixes
@@ -162,6 +167,8 @@ class NetboxIpamModule(NetboxModule):
         - route_targets
         - vlans
         - vlan_groups
+        - vlan_translation_policies
+        - vlan_translation_rules
         - vrfs
         - services
         - service_template

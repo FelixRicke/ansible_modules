@@ -20,6 +20,16 @@ NB_EXPORT_TEMPLATES = "export_templates"
 NB_JOURNAL_ENTRIES = "journal_entries"
 NB_WEBHOOKS = "webhooks"
 NB_CONFIG_TEMPLATES = "config_templates"
+NB_CONFIG_CONTEXT_PROFILES = "config_context_profiles"
+NB_EVENT_RULES = "event_rules"
+NB_IMAGE_ATTACHMENTS = "image_attachments"
+NB_NOTIFICATION_GROUPS = "notification_groups"
+NB_NOTIFICATIONS = "notifications"
+NB_SAVED_FILTERS = "saved_filters"
+NB_SCRIPTS = "scripts"
+NB_SUBSCRIPTIONS = "subscriptions"
+NB_TABLE_CONFIGS = "table_configs"
+NB_TAGGED_OBJECTS = "tagged_objects"
 
 
 class NetboxExtrasModule(NetboxModule):
@@ -40,8 +50,23 @@ class NetboxExtrasModule(NetboxModule):
         Supported endpoints:
         - config_contexts
         - config_templates
+        - config_context_profiles
+        - custom_field_choice_sets
+        - custom_fields
+        - custom_links
+        - event_rules
+        - export_templates
+        - image_attachments
+        - journal_entries
+        - notification_groups
+        - notifications
+        - saved_filters
+        - scripts
+        - subscriptions
+        - table_configs
+        - tagged_objects
         - tags
-        - journal entries
+        - webhooks
         """
         # Used to dynamically set key when returning results
         endpoint_name = ENDPOINT_NAME_MAPPING[self.endpoint]

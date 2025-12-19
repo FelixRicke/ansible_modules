@@ -12,6 +12,8 @@ from ansible_collections.netbox.netbox.plugins.module_utils.netbox_utils import 
     SLUG_REQUIRED,
 )
 
+
+NB_CABLE_TERMINATIONS = "cable_terminations"
 NB_CABLES = "cables"
 NB_CONSOLE_PORTS = "console_ports"
 NB_CONSOLE_PORT_TEMPLATES = "console_port_templates"
@@ -32,6 +34,7 @@ NB_LOCATIONS = "locations"
 NB_MANUFACTURERS = "manufacturers"
 NB_MODULES = "modules"
 NB_MODULE_BAYS = "module_bays"
+NB_MODULE_BAY_TEMPLATES = "module_bay_templates"
 NB_MODULE_TYPES = "module_types"
 NB_PLATFORMS = "platforms"
 NB_POWER_FEEDS = "power_feeds"
@@ -61,6 +64,7 @@ class NetboxDcimModule(NetboxModule):
         This function should have all necessary code for endpoints within the application
         to create/update/delete the endpoint objects
         Supported endpoints:
+        - cable_terminations
         - cables
         - console_ports
         - console_port_templates
@@ -81,6 +85,7 @@ class NetboxDcimModule(NetboxModule):
         - manufacturers
         - modules
         - module_bays
+        - module_bay_templates
         - module_types
         - platforms
         - power_feeds
